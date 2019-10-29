@@ -7,19 +7,18 @@
 #include <string>
 #include <sstream>
 #include <iterator>
+#include "vector"
 
-#define EXE_NAME "antivirus.exe"
 #define VIRUS_SIGNATURE "55 89 e5 53 57 56 81 ec 9c 00 00 00 8d 45 08 89" 
 
 namespace fs = std::filesystem;
 
 int isFileViral(const fs::path exeFilePath) {
-	std::vector<unsigned char> bytes;
-	{
-		std::ifstream in(exeFilePath, std::ios::binary);
-		bytes.assign(std::istreambuf_iterator<char>(in >> std::noskipws),
-			std::istreambuf_iterator<char>());
-		in.close();
+	std::vector<unsigned char> bytes; {
+        std::ifstream in(exeFilePath, std::ios::binary);
+        bytes.assign(std::istreambuf_iterator<char>(in >> std::noskipws),
+                     std::istreambuf_iterator<char>());
+        in.close();
 	}
 
 	std::ostringstream oss;
@@ -32,17 +31,20 @@ int isFileViral(const fs::path exeFilePath) {
 	return str.find(VIRUS_SIGNATURE) != std::string::npos;
 }
 
-int main()
-{
+int main(int argc, char** argv) {
 	const fs::path currentDirPath = fs::current_path();
-	const fs::path exeFilePath = currentDirPath / EXE_NAME;
+    const fs::path exeFilePath = std::string(argv[0]) + ".exe";
 
 	for (const auto& entry : fs::directory_iterator(currentDirPath)) {
 		if (entry.is_directory()) continue;
 		const fs::path filePath = entry.path();
 		if (filePath == exeFilePath) continue;
 		if (filePath.extension() == ".exe") {
-			std::cout << "File: " << filePath << " -- " << (isFileViral(filePath) ? "True" : "False") << std::endl;
+		    bool isVirus = isFileViral(filePath);
+			std::cout << "File: " << filePath << " -- " << (isVirus ? "True" : "False") << std::endl;
+			if (isVirus) {
+			    fs::remove(filePath);
+			}
 
 		}
 	}
